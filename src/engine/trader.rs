@@ -154,7 +154,7 @@ where
             // If the trading loop should_continue, populate event_q with the next MarketEvent
             match self.data.can_continue() {
                 Continuation::Continue => {
-                    if let Some(market_event) = self.data.generate_market() {
+                    if let Some(market_event) = self.data.generate() {
                         self.event_tx.send(Event::Market(market_event.clone()));
                         self.event_q.push_back(Event::Market(market_event));
                     }
@@ -220,7 +220,7 @@ where
                         let fill_side_effect_events = self
                             .portfolio
                             .lock()
-                            .update_from_fill(&fill)
+                            .update_from_trade(&fill)
                             .expect("failed to update Portfolio from fill");
 
                         self.event_tx.send_many(fill_side_effect_events);

@@ -11,36 +11,27 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use barter_data::model::MarketData;
+use barter_integration::{Exchange, Instrument};
 
-/// May generate an advisory [`SignalEvent`] as a result of analysing an input [`MarketEvent`].
+/// May generate an advisory [`Signal`] as a result of analysing input [`MarketData`].
 pub trait SignalGenerator {
-    /// Return Some([`SignalEvent`]), given an input [`MarketEvent`].
-    fn generate_signal(&mut self, market: &MarketEvent) -> Option<SignalEvent>;
-}
-
-/// Signal data produced by the strategy containing advisory signals for the portfolio to interpret.
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
-pub struct SignalEvent {
-    pub event_type: &'static str,
-    pub trace_id: Uuid,
-    pub timestamp: DateTime<Utc>,
-    pub exchange: &'static str,
-    pub symbol: String,
-    pub signals: HashMap<Decision, SignalStrength>,
-    /// Metadata propagated from source MarketEvent
-    pub market_meta: MarketMeta,
+    /// Optionally return a [`Signal`] given input [`MarketData`].
+    fn generate_signal(&mut self, market: &MarketData) -> Option<Signal>;
 }
 
 /// Strength of an advisory signal decision produced by the strategy.
-pub type SignalStrength = f32;
+pub struct SignalStrength(pub f32);
 
-impl SignalEvent {
-    pub const ORGANIC_SIGNAL: &'static str = "Signal";
-
-    /// Returns a [`SignalEventBuilder`] instance.
-    pub fn builder() -> SignalEventBuilder {
-        SignalEventBuilder::new()
-    }
+/// Todo:
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+pub struct Signal {
+    pub timestamp: DateTime<Utc>,
+    pub exchange: &'static str,
+    pub instrument: Instrument,
+    pub signals: HashMap<Decision, SignalStrength>,
+    /// Metadata propagated from source MarketEvent
+    pub market_meta: MarketMeta,
 }
 
 /// Describes the type of advisory signal the strategy is endorsing.
@@ -50,12 +41,6 @@ pub enum Decision {
     CloseLong,
     Short,
     CloseShort,
-}
-
-impl Default for Decision {
-    fn default() -> Self {
-        Self::Long
-    }
 }
 
 impl Decision {
@@ -80,97 +65,24 @@ impl Decision {
     }
 }
 
-/// Builder to construct [`SignalEvent`] instances.
-#[derive(Debug, Default)]
-pub struct SignalEventBuilder {
-    pub trace_id: Option<Uuid>,
-    pub timestamp: Option<DateTime<Utc>>,
-    pub exchange: Option<&'static str>,
-    pub symbol: Option<String>,
-    pub market_meta: Option<MarketMeta>,
-    pub signals: Option<HashMap<Decision, SignalStrength>>,
-}
-
-impl SignalEventBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn trace_id(self, value: Uuid) -> Self {
-        Self {
-            trace_id: Some(value),
-            ..self
-        }
-    }
-
-    pub fn timestamp(self, value: DateTime<Utc>) -> Self {
-        Self {
-            timestamp: Some(value),
-            ..self
-        }
-    }
-
-    pub fn exchange(self, value: &'static str) -> Self {
-        Self {
-            exchange: Some(value),
-            ..self
-        }
-    }
-
-    pub fn symbol(self, value: String) -> Self {
-        Self {
-            symbol: Some(value),
-            ..self
-        }
-    }
-
-    pub fn market_meta(self, value: MarketMeta) -> Self {
-        Self {
-            market_meta: Some(value),
-            ..self
-        }
-    }
-
-    pub fn signals(self, value: HashMap<Decision, SignalStrength>) -> Self {
-        Self {
-            signals: Some(value),
-            ..self
-        }
-    }
-
-    pub fn build(self) -> Result<SignalEvent, StrategyError> {
-        Ok(SignalEvent {
-            event_type: SignalEvent::ORGANIC_SIGNAL,
-            trace_id: self.trace_id.ok_or(StrategyError::BuilderIncomplete)?,
-            timestamp: self.timestamp.ok_or(StrategyError::BuilderIncomplete)?,
-            exchange: self.exchange.ok_or(StrategyError::BuilderIncomplete)?,
-            symbol: self.symbol.ok_or(StrategyError::BuilderIncomplete)?,
-            market_meta: self.market_meta.ok_or(StrategyError::BuilderIncomplete)?,
-            signals: self.signals.ok_or(StrategyError::BuilderIncomplete)?,
-        })
-    }
-}
-
 /// Force exit Signal produced after an [`Engine`] receives a [`Command::ExitPosition`](Command)
 /// from an external source.
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct SignalForceExit {
-    pub event_type: &'static str,
     pub timestamp: DateTime<Utc>,
-    pub exchange: &'static str,
-    pub symbol: String,
+    pub exchange: Exchange,
+    pub instrument: Instrument,
 }
 
 impl SignalForceExit {
     pub const FORCED_EXIT_SIGNAL: &'static str = "SignalForcedExit";
 
-    /// Constructs a new [`Self`] using the [`Market`] provided.
-    pub fn new(market: Market) -> Self {
+    /// Constructs a new [`Self`] using the configuration provided.
+    pub fn new(exchange: Exchange, instrument: Instrument) -> Self {
         Self {
-            event_type: SignalForceExit::FORCED_EXIT_SIGNAL,
             timestamp: Utc::now(),
-            exchange: market.exchange,
-            symbol: market.symbol,
+            exchange,
+            instrument,
         }
     }
 }

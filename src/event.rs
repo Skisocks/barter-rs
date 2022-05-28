@@ -1,29 +1,51 @@
 use crate::data::MarketEvent;
 use crate::strategy::{SignalEvent, SignalForceExit};
-use crate::execution::FillEvent;
-use crate::portfolio::{OrderEvent, Balance};
-use crate::portfolio::position::{Position, PositionExit, PositionUpdate};
-use serde::Serialize;
+use crate::execution::Trade;
+use crate::portfolio::{
+    Balance,
+    order::{Order, Open, Cancelled},
+    position::{Position, PositionExit, PositionUpdate}
+
+};
+use barter_integration::Exchange;
 use std::fmt::Debug;
+use serde::Serialize;
+use chrono::{DateTime, Utc};
 use tokio::sync::mpsc;
 use tracing::warn;
 
-/// Events that occur when bartering. [`MarketEvent`], [`SignalEvent`], [`OrderEvent`], and
-/// [`FillEvent`] are vital to the [`Trader`](crate::engine::trader::Trader) event loop, dictating
-/// the trading sequence. The closed [`Position`] Event is a representation of work done by the system, and is
-/// useful for analysing performance & reconciliations.
-#[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum Event {
-    Market(MarketEvent),
-    Signal(SignalEvent),
-    SignalForceExit(SignalForceExit),
-    OrderNew(OrderEvent),
-    OrderUpdate,
-    Fill(FillEvent),
-    PositionNew(Position),
-    PositionUpdate(PositionUpdate),
-    PositionExit(PositionExit),
-    Balance(Balance),
+// /// Events that occur when bartering. [`MarketEvent`], [`SignalEvent`], [`OrderEvent`], and
+// /// [`FillEvent`] are vital to the [`Trader`](crate::engine::trader::Trader) event loop, dictating
+// /// the trading sequence. The closed [`Position`] Event is a representation of work done by the system, and is
+// /// useful for analysing performance & reconciliations.
+// #[derive(Clone, PartialEq, Debug, Serialize)]
+// pub enum Event {
+//     Market(MarketEvent),
+//     Signal(SignalEvent),
+//     SignalForceExit(SignalForceExit),
+//     OrderNew(OrderEvent),
+//     OrderUpdate,
+//     Fill(FillEvent),
+//     PositionNew(Position),
+//     PositionUpdate(PositionUpdate),
+//     PositionExit(PositionExit),
+//     Balance(Balance),
+// }
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+enum AccountEvent {
+    Disconnected,
+    Balance(Account<Balance>),
+    OrderNew(Order<Open>),
+    OrderCancelled(Order<Cancelled>),
+    Trade(Account<Trade>),
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+struct Account<Kind> {
+    timestamp: DateTime<Utc>,
+    exchange: Exchange,
+    kind: Kind,
 }
 
 /// Message transmitter for sending Barter messages to downstream consumers.

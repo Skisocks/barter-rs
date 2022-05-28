@@ -57,7 +57,7 @@
 //! loop {
 //!     let market_event = match data.can_continue() {
 //!         Continuation::Continue => {
-//!             match data.generate_market() {
+//!             match data.generate() {
 //!                 Some(market_event) => market_event,
 //!                 None => continue,
 //!             }
@@ -138,7 +138,7 @@
 //!         portfolio.generate_exit_order(signal);
 //!     }
 //!     Event::Fill(fill) => {
-//!         portfolio.update_from_fill(&fill);
+//!         portfolio.update_from_trade(&fill);
 //!     }
 //!     _ => {}
 //! }

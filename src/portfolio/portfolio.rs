@@ -198,7 +198,7 @@ where
     RiskManager: OrderEvaluator,
     Statistic: Initialiser + PositionSummariser + Serialize,
 {
-    fn update_from_fill(
+    fn update_from_trade(
         &mut self,
         fill: &FillEvent,
     ) -> Result<Vec<Event>, PortfolioError> {
@@ -1112,7 +1112,7 @@ pub mod tests {
             network: 1.0,
         };
 
-        let result = portfolio.update_from_fill(&input_fill);
+        let result = portfolio.update_from_trade(&input_fill);
         let updated_repository = portfolio.repository;
         let entered_position = updated_repository.position.unwrap();
         let updated_cash = updated_repository.balance.unwrap().available;
@@ -1149,7 +1149,7 @@ pub mod tests {
             network: 1.0,
         };
 
-        let result = portfolio.update_from_fill(&input_fill);
+        let result = portfolio.update_from_trade(&input_fill);
         let updated_repository = portfolio.repository;
         let entered_position = updated_repository.position.unwrap();
         let updated_cash = updated_repository.balance.unwrap().available;
@@ -1199,7 +1199,7 @@ pub mod tests {
             network: 1.0,
         };
 
-        let result = portfolio.update_from_fill(&input_fill);
+        let result = portfolio.update_from_trade(&input_fill);
         let updated_repository = portfolio.repository;
         let updated_cash = updated_repository.balance.unwrap().available;
         let updated_value = updated_repository.balance.unwrap().total;
@@ -1250,7 +1250,7 @@ pub mod tests {
             network: 1.0,
         };
 
-        let result = portfolio.update_from_fill(&input_fill);
+        let result = portfolio.update_from_trade(&input_fill);
         let updated_repository = portfolio.repository;
         let updated_cash = updated_repository.balance.unwrap().available;
         let updated_value = updated_repository.balance.unwrap().total;
@@ -1301,7 +1301,7 @@ pub mod tests {
             network: 1.0,
         };
 
-        let result = portfolio.update_from_fill(&input_fill);
+        let result = portfolio.update_from_trade(&input_fill);
         let updated_repository = portfolio.repository;
         let updated_cash = updated_repository.balance.unwrap().available;
         let updated_value = updated_repository.balance.unwrap().total;
@@ -1352,7 +1352,7 @@ pub mod tests {
             network: 1.0,
         };
 
-        let result = portfolio.update_from_fill(&input_fill);
+        let result = portfolio.update_from_trade(&input_fill);
         let updated_repository = portfolio.repository;
         let updated_cash = updated_repository.balance.unwrap().available;
         let updated_value = updated_repository.balance.unwrap().total;
