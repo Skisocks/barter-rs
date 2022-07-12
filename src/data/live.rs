@@ -34,8 +34,7 @@ impl MarketGenerator for MarketFeed {
 
 impl MarketFeed {
     pub async fn init(subscriptions: &[Subscription]) -> Result<Self, DataError> {
-        let streams = Streams:#
-        :builder()
+        let streams = Streams::builder()
             .subscribe_new(subscriptions)
             .init()
             .await?;
